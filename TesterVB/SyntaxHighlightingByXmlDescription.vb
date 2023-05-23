@@ -37,7 +37,6 @@ Namespace TesterVB
             Me.fctb.AutoScroll = True
             Me.fctb.AutoScrollMinSize = New Size(0, 176)
             Me.fctb.Cursor = Cursors.IBeam
-            Me.fctb.DescriptionFile = "htmlDesc.xml"
             Me.fctb.Dock = DockStyle.Fill
             Me.fctb.IsChanged = True
             Me.fctb.LeftBracket = "("

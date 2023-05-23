@@ -37,7 +37,6 @@ Namespace TesterVB
             Me.fctb.AutoScrollMinSize = New Size(25, 15)
             Me.fctb.BackBrush = Nothing
             Me.fctb.Cursor = Cursors.IBeam
-            Me.fctb.DescriptionFile = ""
             Me.fctb.DisabledColor = Color.FromArgb(100, 180, 180, 180)
             Me.fctb.Dock = DockStyle.Fill
             Me.fctb.Font = New Font("Consolas", 9.75F)

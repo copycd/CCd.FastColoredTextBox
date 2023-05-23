@@ -9,7 +9,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <Authors>Copycd</Authors>
     <AssemblyName>CCd.$(MSBuildProjectName)</AssemblyName>
-    <Version>1.2305</Version>
+    <Version>1.2305.23</Version>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 

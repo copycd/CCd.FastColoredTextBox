@@ -49,7 +49,6 @@
             this.fctb.AutoScroll = true;
             this.fctb.AutoScrollMinSize = new System.Drawing.Size(0, 176);
             this.fctb.Cursor = System.Windows.Forms.Cursors.IBeam;
-            this.fctb.DescriptionFile = "htmlDesc.xml";
             this.fctb.Dock = System.Windows.Forms.DockStyle.Fill;
             this.fctb.IsChanged = true;
             this.fctb.LeftBracket = '(';
