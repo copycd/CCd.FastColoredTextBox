@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<TargetFrameworks>net7.0-windows;net48</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Platforms>AnyCPU;x64</Platforms>
+    <Authors>Copycd</Authors>
+    <AssemblyName>CCd.$(MSBuildProjectName)</AssemblyName>
+    <Version>1.2305</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Update="AutocompleteMenu.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="DocumentMap.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="FastColoredTextBox.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="FindForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="GoToForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="HotkeysEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="ReplaceForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Ruler.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UnfocusablePanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="ReplaceForm.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
