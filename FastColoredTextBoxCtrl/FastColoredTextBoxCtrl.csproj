@@ -6,10 +6,10 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>AnyCPU</Platforms>
     <Authors>Copycd</Authors>
     <AssemblyName>CCd.$(MSBuildProjectName)</AssemblyName>
-    <Version>1.2305.23</Version>
+    <Version>1.2305.24</Version>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 

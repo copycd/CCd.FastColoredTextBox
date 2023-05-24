@@ -23,7 +23,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
@@ -34,7 +33,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using System.Windows.Forms.Design;
 using Microsoft.Win32;
 using Timer = System.Windows.Forms.Timer;
 
@@ -1021,14 +1019,14 @@ namespace FastColoredTextBoxNS
 
         // copycd:: .net48에서 지원안함.
         // 그래서 .net6이상만 사용함.
-#if NET6_0_OR_GREATER
+//#if NET6_0_OR_GREATER
         /// <summary>
         /// XML file with description of syntax highlighting.
         /// This property works only with Language == Language.Custom.
         /// </summary>
         [Browsable(true)]
         [DefaultValue(null)]
-        [Editor(typeof (FileNameEditor), typeof (UITypeEditor))]
+        //[Editor(typeof (FileNameEditor), typeof (UITypeEditor))]
         [Description(
             "XML file with description of syntax highlighting. This property works only with Language == Language.Custom."
             )]
@@ -1041,7 +1039,7 @@ namespace FastColoredTextBoxNS
                 Invalidate();
             }
         }
-#endif
+//#endif
 
         /// <summary>
         /// Position of left highlighted bracket.
@@ -7288,15 +7286,10 @@ namespace FastColoredTextBoxNS
 
             if (SyntaxHighlighter != null)
             {
-                // copycd::
-#if NET6_0_OR_GREATER
                 if (Language == Language.Custom && !string.IsNullOrEmpty(DescriptionFile))
                     SyntaxHighlighter.HighlightSyntax(DescriptionFile, range);
                 else
                     SyntaxHighlighter.HighlightSyntax(Language, range);
-#else
-                SyntaxHighlighter.HighlightSyntax(Language, range);
-#endif
             }
 
 #if debug
