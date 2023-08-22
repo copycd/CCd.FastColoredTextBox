@@ -1,13 +1,9 @@
-﻿using FastColoredTextBoxNS;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
-
-// warning막음. xxx is only supported on: 'windows'.
-#pragma warning disable CA1416
 
 
 namespace FastColoredTextBoxNS
