@@ -9,9 +9,11 @@
     <Platforms>AnyCPU</Platforms>
     <Authors>Copycd</Authors>
     <AssemblyName>CCd.$(MSBuildProjectName)</AssemblyName>
-    <Version>1.2308.01</Version>
+    <Version>1.2308.24</Version>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageIcon>logo.png</PackageIcon>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>../copycd_key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
