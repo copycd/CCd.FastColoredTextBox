@@ -29,6 +29,7 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -8568,8 +8569,9 @@ window.status = ""#print"";
         Down = 8
     }
 
-    [Serializable]
-    public class ServiceColors
+    // copycd:: .net8이후에 보안문제로 더이상지원안함.
+    // [Serializable]
+    public class ServiceColors : ISerializable
     {
         public Color CollapseMarkerForeColor { get; set; }
         public Color CollapseMarkerBackColor { get; set; }
@@ -8586,6 +8588,28 @@ window.status = ""#print"";
             ExpandMarkerForeColor = Color.Red;
             ExpandMarkerBackColor = Color.White;
             ExpandMarkerBorderColor = Color.Silver;
+        }
+
+        // copycd:: ISerializable 구현.
+        protected ServiceColors(SerializationInfo info, StreamingContext context)
+        {
+            this.CollapseMarkerForeColor = Color.FromArgb(info.GetInt32("CollapseFore"));
+            this.CollapseMarkerBackColor = Color.FromArgb(info.GetInt32("CollapseBack"));
+            this.CollapseMarkerBorderColor = Color.FromArgb(info.GetInt32("CollapseBorder"));
+            this.ExpandMarkerForeColor = Color.FromArgb(info.GetInt32("ExpandFore"));
+            this.ExpandMarkerBackColor = Color.FromArgb(info.GetInt32("ExpandBack"));
+            this.ExpandMarkerBorderColor = Color.FromArgb(info.GetInt32("ExpandBorder"));
+        }
+
+        // copycd:: ISerializable 구현.
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("CollapseFore", this.CollapseMarkerForeColor.ToArgb() );
+            info.AddValue("CollapseBack", this.CollapseMarkerBackColor.ToArgb());
+            info.AddValue("CollapseBorder", this.CollapseMarkerBorderColor.ToArgb());
+            info.AddValue("ExpandFore", this.ExpandMarkerForeColor.ToArgb());
+            info.AddValue("ExpandBack", this.ExpandMarkerBackColor.ToArgb());
+            info.AddValue("ExpandBorder", this.ExpandMarkerBorderColor.ToArgb());
         }
     }
 
