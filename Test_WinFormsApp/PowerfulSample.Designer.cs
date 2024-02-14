@@ -473,7 +473,6 @@ namespace Tester
             this.fctb.PreferredLineWidth = 80;
             this.fctb.ReservedCountOfLineNumberChars = 2;
             this.fctb.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            this.fctb.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("fctb.ServiceColors")));
             this.fctb.Size = new System.Drawing.Size(461, 384);
             this.fctb.TabIndex = 3;
             this.fctb.Text = resources.GetString("fctb.Text");
