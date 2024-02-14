@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<TargetFrameworks>net6.0-windows;net48</TargetFrameworks>
+	<TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>disable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -9,11 +9,9 @@
     <Platforms>AnyCPU</Platforms>
     <Authors>Copycd</Authors>
     <AssemblyName>CCd.$(MSBuildProjectName)</AssemblyName>
-    <Version>1.2308.24</Version>
+    <Version>1.2402</Version>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageIcon>logo.png</PackageIcon>
-    <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>../copycd_key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
