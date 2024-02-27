@@ -29,7 +29,6 @@ namespace FastColoredTextBoxNS
         FastColoredTextBoxNS.FastColoredTextBox _fctb;
         Channel<LogMsgItem> _logMsgChannel = Channel.CreateUnbounded<LogMsgItem>();
 
-        bool _isTextBoxBusy = false;
         CancellationTokenSource thradCancelSource = null;
 
         public CCdFastColoredTextBoxLog()
@@ -154,9 +153,11 @@ namespace FastColoredTextBoxNS
 
         async Task startLogMsgDisplayConsumeAsync()
         {
+            bool isTextBoxBusy = false;
+            Semaphore _smp = new Semaphore(1, 1);
             while (await _logMsgChannel.Reader.WaitToReadAsync())
             {
-                if(_isTextBoxBusy)
+                if(isTextBoxBusy)
                 {
                     // 조금쉬어라.
                     Thread.Sleep(1);
@@ -169,14 +170,13 @@ namespace FastColoredTextBoxNS
                 while (_logMsgChannel.Reader.TryRead(out var item))
                 {
                     logs.Add(item);
-                    if (++popCount > 99)
+                    // 한번에 너무 많이씩은 말자.
+                    if (++popCount > 500)
                         break;
                 }
 
                 if (logs.Count > 0)
                 {
-                    _isTextBoxBusy = true;
-
                     if (logs != null && logs.Count > 0 && this._fctb != null )
                     {
                         var act = new Action(() =>
@@ -188,23 +188,19 @@ namespace FastColoredTextBoxNS
                             finally
                             {
                                 // 작업이 끝나면 반드시 되돌려야 함.
-                                _isTextBoxBusy = false;
+                                isTextBoxBusy = false;
                             }
                         });
 
                         if (this._fctb.InvokeRequired)
                         {
+                            isTextBoxBusy = true;
                             this._fctb.BeginInvoke(act);
                         }
                         else
                         {
                             act();
                         }
-                    }
-                    else
-                    {
-                        // 작업이 끝나면 반드시 되돌려야 함.
-                        _isTextBoxBusy = false;
                     }
                 }
             }
