@@ -187,7 +187,6 @@
             this.fctb1.Paddings = new System.Windows.Forms.Padding(0);
             this.fctb1.ReadOnly = true;
             this.fctb1.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            this.fctb1.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("fctb1.ServiceColors")));
             this.fctb1.Size = new System.Drawing.Size(342, 311);
             this.fctb1.TabIndex = 26;
             this.fctb1.Text = "fastColoredTextBox1";
@@ -221,7 +220,6 @@
             this.fctb2.Paddings = new System.Windows.Forms.Padding(0);
             this.fctb2.ReadOnly = true;
             this.fctb2.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            this.fctb2.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("fctb2.ServiceColors")));
             this.fctb2.Size = new System.Drawing.Size(352, 311);
             this.fctb2.TabIndex = 27;
             this.fctb2.Text = "fastColoredTextBox2";

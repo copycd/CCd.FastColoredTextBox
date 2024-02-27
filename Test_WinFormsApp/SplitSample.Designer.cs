@@ -102,7 +102,6 @@
             this.fctbMaster.RightBracket = ')';
             this.fctbMaster.RightBracket2 = '}';
             this.fctbMaster.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            this.fctbMaster.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("fctbMaster.ServiceColors")));
             this.fctbMaster.ShowCaretWhenInactive = true;
             this.fctbMaster.Size = new System.Drawing.Size(610, 205);
             this.fctbMaster.TabIndex = 0;
@@ -142,7 +141,6 @@
             this.fctbSlave.RightBracket = ')';
             this.fctbSlave.RightBracket2 = '}';
             this.fctbSlave.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            this.fctbSlave.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("fctbSlave.ServiceColors")));
             this.fctbSlave.ShowCaretWhenInactive = true;
             this.fctbSlave.Size = new System.Drawing.Size(610, 166);
             this.fctbSlave.SourceTextBox = this.fctbMaster;
