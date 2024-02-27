@@ -2836,15 +2836,15 @@ namespace FastColoredTextBoxNS
         /// <summary>
         /// Append string to end of the Text
         /// </summary>
-        public virtual void AppendText(string text)
+        public virtual void AppendText(string text, bool invalidate = true )
         {
-            AppendText(text, null);
+            AppendText(text, null, invalidate );
         }
 
         /// <summary>
         /// Append string to end of the Text
         /// </summary>
-        public virtual void AppendText(string text, Style style)
+        public virtual void AppendText(string text, Style style, bool invalidate = true )
         {
             if (text == null)
                 return;
@@ -2878,8 +2878,11 @@ namespace FastColoredTextBoxNS
                 Selection.End = oldEnd;
                 Selection.EndUpdate();
             }
-            //
-            Invalidate();
+
+            if (invalidate)
+            {
+                Invalidate();
+            }
         }
 
         /// <summary>
