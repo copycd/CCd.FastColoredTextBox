@@ -180,9 +180,20 @@ namespace FastColoredTextBoxNS
         }
 
 
-        public void flushLogs()
+        public int getRemainingLogCount()
         {
-            processLog();
+            return this.msgQ.Count;
+        }
+
+
+        /// <summary>
+        /// 출력해야할 로그들을 실제로 출력함.
+        /// </summary>
+        /// <param name="count">한번에 출력할 로그갯수</param>
+        public void flushLogs( int count = 0 )
+        {
+            int popupCount = count < 1 ? 100 : count;
+            processLog(popupCount);
         }
 
 
@@ -190,7 +201,7 @@ namespace FastColoredTextBoxNS
         /// <summary>
         /// 버퍼에 있는 내용을 출력시도함.
         /// </summary>
-        void processLog()
+        void processLog( int popupCount = 100 )
         {
             // 바쁘면, 지나감.
             if (this.isBusy == false)
@@ -206,7 +217,7 @@ namespace FastColoredTextBoxNS
                 // 컨트롤이 있을때만 출력을 시도해야함.
                 if (this.fctb != null)
                 {
-                    logs = popUpLogs(100);
+                    logs = popUpLogs(popupCount);
                 }
 
                 if (logs != null && logs.Count > 0)
