@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CCd.Log" Version="3.2402.22" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FastColoredTextBoxCtrl\FastColoredTextBoxCtrl.csproj" />
   </ItemGroup>
 

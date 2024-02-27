@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CCd.Wins.UI;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -185,7 +186,7 @@ namespace Tester
 
         private void button33_Click(object sender, EventArgs e)
         {
-            new AutocompleteSample4().Show(); 
+            new AutocompleteSample4().Show();
         }
 
         private void button34_Click(object sender, EventArgs e)
@@ -216,6 +217,33 @@ namespace Tester
         private void button39_Click(object sender, EventArgs e)
         {
             new CustomTextSourceSample2().Show();
+        }
+
+        private void button40_Click(object sender, EventArgs e)
+        {
+            myTestCode();
+        }
+
+        void myTestCode()
+        {
+            int checkCount = 0;
+            int tryTotalCount = 10000;
+            ProgressForm form = new ProgressForm(false);
+            form.setUserTask((progress, cancelToken) =>
+            {
+                progress.begin(tryTotalCount, null);
+                for (int i = 0; i < tryTotalCount; i++)
+                {
+                    ++checkCount;
+                    progress.step(i.ToString());
+                    progress.stepResult(CCd.Log.ResultType.success);
+                    progress.msg(string.Format($"{i}:  이것은 메세지 입니다."));
+                }
+
+                progress.end();
+                return true;
+            });
+            form.runAsync();
         }
     }
 }
