@@ -9,10 +9,14 @@
     <Platforms>AnyCPU</Platforms>
     <Authors>Copycd</Authors>
     <AssemblyName>CCd.$(MSBuildProjectName)</AssemblyName>
-    <Version>1.2405.02</Version>
+    <Version>1.2406</Version>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageIcon>logo.png</PackageIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="logo.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="..\res\logo.png">
