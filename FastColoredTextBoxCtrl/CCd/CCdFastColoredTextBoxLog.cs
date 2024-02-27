@@ -1,9 +1,12 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 
 namespace FastColoredTextBoxNS
@@ -24,19 +27,19 @@ namespace FastColoredTextBoxNS
 
 
         FastColoredTextBoxNS.FastColoredTextBox fctb;
-        ConcurrentQueue<LogMsgItem> msgQ = new ConcurrentQueue<LogMsgItem>();
-        readonly object lockObj = new object();
-        Boolean isBusy = false;
+        Channel<LogMsgItem> _logMsgChannel = Channel.CreateUnbounded<LogMsgItem>();
+
+        bool _isTextBoxBusy = false;
         CancellationTokenSource thradCancelSource = null;
 
         public CCdFastColoredTextBoxLog()
         {
+            startLogMsgDisplayConsumeAsync();
         }
 
 
         public void Dispose()
         {
-            this.isBusy = false;
             this.fctb = null;
 
             closeQueueThread();
@@ -102,13 +105,14 @@ namespace FastColoredTextBoxNS
         /// <param name="fctb2"></param>
         /// <param name="text"></param>
         /// <param name="style"></param>
-        private static void logWrite(FastColoredTextBoxNS.FastColoredTextBox fctb2, List<LogMsgItem> logs)
+        private static void writeLogToTextBox(FastColoredTextBoxNS.FastColoredTextBox fctb2, List<LogMsgItem> logs)
         {
-            if (fctb2 == null)
+            if (fctb2 == null || logs == null)
                 return;
 
             //some stuffs for best performance
             fctb2.BeginUpdate();
+            // 여기서 이렇게 해줘야, 갱신이 안되고 빠르다.
             fctb2.Selection.BeginUpdate();
             //remember user selection
             var userSelection = fctb2.Selection.Clone();
@@ -118,10 +122,12 @@ namespace FastColoredTextBoxNS
             foreach (var log in logs)
             {
                 if (log.style == null)
-                    fctb2.AppendText(log.text);
+                    fctb2.AppendText(log.text, false);
                 else
-                    fctb2.AppendText(log.text, log.style);
+                    fctb2.AppendText(log.text, log.style, false);
             }
+
+            fctb2.Invalidate();
 
             //restore user selection
             //if (!userSelection.IsEmpty || userSelection.Start.iLine < fctb2.LinesCount - 2)
@@ -146,43 +152,68 @@ namespace FastColoredTextBoxNS
         }
 
 
-        /// <summary>
-        /// Q에 내용이 있다면 하나를 수행함.
-        /// </summary>
-        List<LogMsgItem> popUpLogs(int popCount = 1)
+        async Task startLogMsgDisplayConsumeAsync()
         {
-            if (this.msgQ.Count > 0)
+            while (await _logMsgChannel.Reader.WaitToReadAsync())
             {
-                try
+                if(_isTextBoxBusy)
                 {
-                    var result = new List<LogMsgItem>();
-                    popCount = popCount > this.msgQ.Count ? this.msgQ.Count : popCount;
-                    for (int i = 0; i < popCount; i++)
+                    // 조금쉬어라.
+                    Thread.Sleep(1);
+                    continue;
+                }
+
+                // 여러개씩 모아서 출력함.
+                int popCount = 0;
+                var logs = new List<LogMsgItem>();
+                while (_logMsgChannel.Reader.TryRead(out var item))
+                {
+                    logs.Add(item);
+                    if (++popCount > 99)
+                        break;
+                }
+
+                if (logs.Count > 0)
+                {
+                    _isTextBoxBusy = true;
+
+                    if (logs != null && logs.Count > 0)
                     {
-                        LogMsgItem item;
-                        if (this.msgQ.TryDequeue(out item))
+                        var act = new Action(() =>
                         {
-                            result.Add(item);
+                            try
+                            {
+                                writeLogToTextBox(this.fctb, logs);
+                            }
+                            finally
+                            {
+                                // 작업이 끝나면 반드시 되돌려야 함.
+                                _isTextBoxBusy = false;
+                            }
+                        });
+
+                        if (this.fctb.InvokeRequired)
+                        {
+                            this.fctb.BeginInvoke(act);
                         }
                         else
                         {
-                            break;
+                            act();
                         }
                     }
-                    return result;
-                }
-                catch( Exception ex )
-                {
-                    Debug.WriteLine(ex);
+                    else
+                    {
+                        // 작업이 끝나면 반드시 되돌려야 함.
+                        _isTextBoxBusy = false;
+                    }
                 }
             }
-            return null;
         }
 
 
         public int getRemainingLogCount()
         {
-            return this.msgQ.Count;
+            return this._logMsgChannel.Reader.Count;
         }
 
 
@@ -192,70 +223,6 @@ namespace FastColoredTextBoxNS
         /// <param name="count">한번에 출력할 로그갯수</param>
         public void flushLogs( int count = 0 )
         {
-            int popupCount = count < 1 ? 100 : count;
-            processLog(popupCount);
-        }
-
-
-
-        /// <summary>
-        /// 버퍼에 있는 내용을 출력시도함.
-        /// </summary>
-        void processLog( int popupCount = 100 )
-        {
-            // 바쁘면, 지나감.
-            if (this.isBusy == false)
-            {
-                // 바쁘다고 표시하고,
-                lock (lockObj)
-                {
-                    this.isBusy = true;
-                }
-
-                // 한번에 처리할 양만큼만 모음.
-                List<LogMsgItem> logs = null;
-                // 컨트롤이 있을때만 출력을 시도해야함.
-                if (this.fctb != null)
-                {
-                    logs = popUpLogs(popupCount);
-                }
-
-                if (logs != null && logs.Count > 0)
-                {
-                    var act = new Action(() =>
-                    {
-                        try
-                        {
-                            logWrite(this.fctb, logs);
-                        }
-                        finally
-                        {
-                            // 작업이 끝나면 반드시 되돌려야 함.
-                            lock (lockObj)
-                            {
-                                this.isBusy = false;
-                            }
-                        }
-                    });
-
-                    if (this.fctb.InvokeRequired)
-                    {
-                        this.fctb.BeginInvoke(act);
-                    }
-                    else
-                    {
-                        act();
-                    }
-                }
-                else
-                {
-                    // 작업이 끝나면 반드시 되돌려야 함.
-                    lock (lockObj)
-                    {
-                        this.isBusy = false;
-                    }
-                }
-            }
         }
 
 
@@ -272,7 +239,7 @@ namespace FastColoredTextBoxNS
             item.text = text;
             item.style = style;
 
-            this.msgQ.Enqueue(item);
+            this._logMsgChannel.Writer.WriteAsync(item);
         }
     }
 }
