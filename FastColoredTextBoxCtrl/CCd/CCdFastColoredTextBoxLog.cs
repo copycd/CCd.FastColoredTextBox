@@ -26,7 +26,7 @@ namespace FastColoredTextBoxNS
         public static readonly TextStyle headlineStyle = new TextStyle(Brushes.Black, null, FontStyle.Bold);
 
 
-        FastColoredTextBoxNS.FastColoredTextBox fctb;
+        FastColoredTextBoxNS.FastColoredTextBox _fctb;
         Channel<LogMsgItem> _logMsgChannel = Channel.CreateUnbounded<LogMsgItem>();
 
         bool _isTextBoxBusy = false;
@@ -40,7 +40,7 @@ namespace FastColoredTextBoxNS
 
         public void Dispose()
         {
-            this.fctb = null;
+            this._fctb = null;
 
             closeQueueThread();
         }
@@ -61,7 +61,7 @@ namespace FastColoredTextBoxNS
         /// <param name="fastColoredTextBox"></param>
         public void attachControl(FastColoredTextBoxNS.FastColoredTextBox fastColoredTextBox)
         {
-            this.fctb = fastColoredTextBox;
+            this._fctb = fastColoredTextBox;
         }
 
 
@@ -70,7 +70,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         public void clear()
         {
-            this.fctb.Clear();
+            this._fctb.Clear();
         }
 
 
@@ -177,13 +177,13 @@ namespace FastColoredTextBoxNS
                 {
                     _isTextBoxBusy = true;
 
-                    if (logs != null && logs.Count > 0)
+                    if (logs != null && logs.Count > 0 && this._fctb != null )
                     {
                         var act = new Action(() =>
                         {
                             try
                             {
-                                writeLogToTextBox(this.fctb, logs);
+                                writeLogToTextBox(this._fctb, logs);
                             }
                             finally
                             {
@@ -192,9 +192,9 @@ namespace FastColoredTextBoxNS
                             }
                         });
 
-                        if (this.fctb.InvokeRequired)
+                        if (this._fctb.InvokeRequired)
                         {
-                            this.fctb.BeginInvoke(act);
+                            this._fctb.BeginInvoke(act);
                         }
                         else
                         {
