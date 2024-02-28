@@ -153,11 +153,11 @@ namespace FastColoredTextBoxNS
 
         async Task startLogMsgDisplayConsumeAsync()
         {
-            bool isTextBoxBusy = false;
+            long isTextBoxBusy = 0;
             Semaphore _smp = new Semaphore(1, 1);
             while (await _logMsgChannel.Reader.WaitToReadAsync())
             {
-                if(isTextBoxBusy)
+                if(Interlocked.Read(ref isTextBoxBusy) == 1 )
                 {
                     // 조금쉬어라.
                     Thread.Sleep(1);
@@ -188,13 +188,13 @@ namespace FastColoredTextBoxNS
                             finally
                             {
                                 // 작업이 끝나면 반드시 되돌려야 함.
-                                isTextBoxBusy = false;
+                                Interlocked.Exchange(ref isTextBoxBusy, 0);
                             }
                         });
 
                         if (this._fctb.InvokeRequired)
                         {
-                            isTextBoxBusy = true;
+                            Interlocked.Exchange(ref isTextBoxBusy, 1);
                             this._fctb.BeginInvoke(act);
                         }
                         else
