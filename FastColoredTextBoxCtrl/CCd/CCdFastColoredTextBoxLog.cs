@@ -229,8 +229,6 @@ namespace FastColoredTextBoxNS
         /// <param name="style"></param>
         private void requestWriteLog(string text, Style style)
         {
-            // 무조건 Q에 넣음.
-            // 나중에 Q가 해소되지 못했는데, 계속 쌓이는 상황은 그때 생각하자.
             var item = new LogMsgItem();
             item.text = text;
             item.style = style;
