@@ -144,10 +144,12 @@ namespace FastColoredTextBoxNS
 
 
         /// <summary>
-        /// 일정한계를 넘어가면, Text를 버림.
+        /// 출력대기 로그갯수.
         /// </summary>
-        void checkLimitedText()
+        /// <returns></returns>
+        public int getLogStackedCount()
         {
+            return _logMsgChannel.Reader.Count;
         }
 
 
