@@ -161,7 +161,7 @@ namespace FastColoredTextBoxNS
             {
                 if(Interlocked.Read(ref isTextBoxBusy) == 1 )
                 {
-                    // 조금쉬어라.
+                    // 너무 바쁘다. 조금쉬어라.
                     Thread.Sleep(1);
                     continue;
                 }
@@ -173,7 +173,8 @@ namespace FastColoredTextBoxNS
                 {
                     logs.Add(item);
                     // 한번에 너무 많이씩은 말자.
-                    if (++popCount > 500)
+                    // 너무 많이 해도 별로 빨라지지 않음.
+                    if (++popCount > 800)
                         break;
                 }
 
@@ -186,6 +187,9 @@ namespace FastColoredTextBoxNS
                             try
                             {
                                 writeLogToTextBox(this._fctb, logs);
+                                // 너무 빠른속도로 갱신이 되면, 화면이 갱신되지 않는 현상이 있어서
+                                // 여기서 한번 update를 호출해줌.
+                                this._fctb.Update();
                             }
                             finally
                             {

@@ -238,11 +238,6 @@ namespace Tester
                     progress.step(i.ToString());
                     progress.stepResult(CCd.Log.ResultType.success);
                     progress.msg(string.Format($"{i}:  이것은 메세지 입니다."));
-
-                    if(checkCount%1000 == 0)
-                    {
-                        form.Invalidate();
-                    }
                 }
 
                 progress.end();
