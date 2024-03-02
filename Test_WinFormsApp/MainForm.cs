@@ -227,7 +227,7 @@ namespace Tester
         void myTestCode()
         {
             int checkCount = 0;
-            int tryTotalCount = 10000;
+            int tryTotalCount = 50000;
             ProgressForm form = new ProgressForm(false);
             form.setUserTask((progress, cancelToken) =>
             {
@@ -238,6 +238,11 @@ namespace Tester
                     progress.step(i.ToString());
                     progress.stepResult(CCd.Log.ResultType.success);
                     progress.msg(string.Format($"{i}:  이것은 메세지 입니다."));
+
+                    if(checkCount%1000 == 0)
+                    {
+                        form.Invalidate();
+                    }
                 }
 
                 progress.end();
