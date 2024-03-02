@@ -8572,8 +8572,8 @@ window.status = ""#print"";
         Down = 8
     }
 
-    // copycd:: .net8이후에 보안문제로 더이상지원안함.
-    // [Serializable]
+    // copycd:: .net8이후에 보안문제로 더이상지원안한다는 글을 본것 같은데, 이와 관련해서 문제가 있는지 확실히 할 필요가 있음
+    [Serializable()]
     public class ServiceColors : ISerializable
     {
         public Color CollapseMarkerForeColor { get; set; }
