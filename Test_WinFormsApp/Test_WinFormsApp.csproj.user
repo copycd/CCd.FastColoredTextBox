@@ -12,5 +12,8 @@
     <EmbeddedResource Update="CCd\ProgressForm.resx">
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Update="VisibleRangeChangedDelayedSample.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>
