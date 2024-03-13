@@ -2,14 +2,14 @@
 
   <PropertyGroup>
 	<TargetFramework>net6.0-windows</TargetFramework>
-    <Nullable>disable</Nullable>
+	<Version>1.2413</Version>
+	<Nullable>disable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Platforms>AnyCPU</Platforms>
     <Authors>Copycd</Authors>
     <AssemblyName>CCd.$(MSBuildProjectName)</AssemblyName>
-    <Version>1.2412</Version>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageIcon>logo.png</PackageIcon>
   </PropertyGroup>
