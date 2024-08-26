@@ -2,7 +2,7 @@
 
   <PropertyGroup>
 	<TargetFramework>net6.0-windows</TargetFramework>
-	<Version>1.2414</Version>
+	<Version>1.2415</Version>
 	<Nullable>disable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>

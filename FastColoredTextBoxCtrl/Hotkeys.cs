@@ -42,8 +42,9 @@ namespace FastColoredTextBoxNS
             this[KEYS.Control | KEYS.Shift | KEYS.B] = FCTBAction.UnbookmarkLine;
             this[KEYS.Control | KEYS.N] = FCTBAction.GoNextBookmark;
             this[KEYS.Control | KEYS.Shift | KEYS.N] = FCTBAction.GoPrevBookmark;
-            this[KEYS.Alt | KEYS.Back] = FCTBAction.Undo;
-            this[KEYS.Control | KEYS.Back] = FCTBAction.ClearWordLeft;
+            // copycd:: 한글로 뒤로 저장이되는 오류가 발현됨.
+            //this[KEYS.Alt | KEYS.Back] = FCTBAction.Undo;
+            //this[KEYS.Control | KEYS.Back] = FCTBAction.ClearWordLeft;
             this[KEYS.Insert] = FCTBAction.ReplaceMode;
             this[KEYS.Control | KEYS.Insert] = FCTBAction.Copy;
             this[KEYS.Shift | KEYS.Insert] = FCTBAction.Paste;
