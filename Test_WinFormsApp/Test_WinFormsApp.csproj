@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CCd.Log" Version="3.2403.0" />
+    <PackageReference Include="CCd.Log" Version="5.2408.22" />
   </ItemGroup>
 
   <ItemGroup>
