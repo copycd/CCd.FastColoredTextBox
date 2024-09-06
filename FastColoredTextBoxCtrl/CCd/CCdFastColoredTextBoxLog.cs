@@ -104,9 +104,9 @@ namespace FastColoredTextBoxNS
         /// <param name="fctb2"></param>
         /// <param name="text"></param>
         /// <param name="style"></param>
-        private static void writeLogToTextBox(FastColoredTextBoxNS.FastColoredTextBox fctb2, List<LogMsgItem> logs)
+        private static void writeLogToTextBox(FastColoredTextBoxNS.FastColoredTextBox fctb2, LogMsgItem[] logBuff, int logCount )
         {
-            if (fctb2 == null || logs == null)
+            if (fctb2 == null || logBuff == null || logCount < 1)
                 return;
 
             //some stuffs for best performance
@@ -118,12 +118,12 @@ namespace FastColoredTextBoxNS
             //add text with predefined style
             fctb2.TextSource.CurrentTB = fctb2;
 
-            foreach (var log in logs)
+            for( int i = 0; i < logCount; i++ )
             {
-                if (log.style == null)
-                    fctb2.AppendText(log.text, false);
+                if (logBuff[i].style == null)
+                    fctb2.AppendText(logBuff[i].text, false);
                 else
-                    fctb2.AppendText(log.text, log.style, false);
+                    fctb2.AppendText(logBuff[i].text, logBuff[i].style, false);
             }
 
             fctb2.Invalidate();
@@ -153,40 +153,41 @@ namespace FastColoredTextBoxNS
         }
 
 
-        async Task startLogMsgDisplayConsumeAsync()
+        async void startLogMsgDisplayConsumeAsync()
         {
-            long isTextBoxBusy = 0;
-            Semaphore _smp = new Semaphore(1, 1);
+            LogMsgItem[] logMsgItemBuff = new LogMsgItem[1000];
+            // 위 버퍼갯수보다 크면 안됨.
+            const int maxPopCount = 800;
+            int isTextBoxBusy = 0;
+
             while (await _logMsgChannel.Reader.WaitToReadAsync())
             {
-                if(Interlocked.Read(ref isTextBoxBusy) == 1 )
+                if(isTextBoxBusy > 0 || Interlocked.Increment(ref isTextBoxBusy) > 1 )
                 {
                     // 너무 바쁘다. 조금쉬어라.
-                    Thread.Sleep(1);
+                    Thread.Sleep(0);
                     continue;
                 }
 
                 // 여러개씩 모아서 출력함.
                 int popCount = 0;
-                var logs = new List<LogMsgItem>();
-                while (_logMsgChannel.Reader.TryRead(out var item))
+                while (_logMsgChannel.Reader.TryRead(out logMsgItemBuff[popCount]))
                 {
-                    logs.Add(item);
                     // 한번에 너무 많이씩은 말자.
                     // 너무 많이 해도 별로 빨라지지 않음.
-                    if (++popCount > 800)
+                    if (++popCount > maxPopCount)
                         break;
                 }
 
-                if (logs.Count > 0)
+                if (popCount > 0)
                 {
-                    if (logs != null && logs.Count > 0 && this._fctb != null )
+                    if (this._fctb != null )
                     {
                         var act = new Action(() =>
                         {
                             try
                             {
-                                writeLogToTextBox(this._fctb, logs);
+                                writeLogToTextBox(this._fctb, logMsgItemBuff, popCount );
                                 // 너무 빠른속도로 갱신이 되면, 화면이 갱신되지 않는 현상이 있어서
                                 // 여기서 한번 update를 호출해줌.
                                 this._fctb.Update();
@@ -200,15 +201,18 @@ namespace FastColoredTextBoxNS
 
                         if (this._fctb.InvokeRequired)
                         {
-                            Interlocked.Exchange(ref isTextBoxBusy, 1);
                             this._fctb.BeginInvoke(act);
                         }
                         else
                         {
                             act();
                         }
+                        continue;
                     }
                 }
+
+                // 아무것도 안할거면, 초기화.
+                Interlocked.Exchange(ref isTextBoxBusy, 0);
             }
         }
 
