@@ -126,8 +126,6 @@ namespace FastColoredTextBoxNS
                     fctb2.AppendText(logBuff[i].text, logBuff[i].style, false);
             }
 
-            fctb2.Invalidate();
-
             //restore user selection
             //if (!userSelection.IsEmpty || userSelection.Start.iLine < fctb2.LinesCount - 2)
             if (!userSelection.IsEmpty)
@@ -140,6 +138,9 @@ namespace FastColoredTextBoxNS
                               //
             fctb2.Selection.EndUpdate();
             fctb2.EndUpdate();
+
+            // 한번 갱신 날려줌.
+            fctb2.Invalidate();
         }
 
 
@@ -201,7 +202,7 @@ namespace FastColoredTextBoxNS
 
                         if (this._fctb.InvokeRequired)
                         {
-                            this._fctb.BeginInvoke(act);
+                            this._fctb.Invoke(act);
                         }
                         else
                         {
