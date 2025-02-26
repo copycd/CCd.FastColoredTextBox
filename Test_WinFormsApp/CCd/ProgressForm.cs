@@ -34,23 +34,24 @@ namespace CCd.Wins.UI
             }
         }
 
-        Task<bool> _userJobTask;
-        CancellationTokenSource thradCancelSource = null;
+
+        Task<bool>? _userJobTask;
+        Func<ICCdProgress, CancellationToken, bool> _userJobFunc;
+        CancellationTokenSource? thradCancelSource = null;
         IndexStatus _indexStatus = new IndexStatus();
         Stopwatch _totalElapsedTimeWatch = new Stopwatch();
         ElapsedTimeCounter _timeCounter = new ElapsedTimeCounter();
-        FastColoredTextBoxNS.CCdFastColoredTextBoxLog fastColoredTextBoxLog = new FastColoredTextBoxNS.CCdFastColoredTextBoxLog();
+        FastColoredTextBoxNS.CCdFastColoredTextBoxLog _fastColoredTextBoxLog = new FastColoredTextBoxNS.CCdFastColoredTextBoxLog();
         bool contiuneProgress = true;
         bool started = false;
-        long isIndexLabelCtrlBusy = 0;
+        int isIndexLabelCtrlBusy = 0;
         long _timeUpdatedTMsg = 0;
         bool writeInstantMsgToLog = false;
 
         // instant는 buffer의 크기를 많이 쌓을 필요가 없음.
         // 쌓이면, 이전에 쌓였던것 날려버리고, 새로운것을 무조건 기록해서 마지막것만 사용할것이므로.
         Channel<string> instantMsgChannel = Channel.CreateBounded<string>( new BoundedChannelOptions(2) { FullMode = BoundedChannelFullMode.DropOldest } );
-        long isInstantLabelCtrlBusy = 0;
-        bool _needToRefreshForm = false;
+        int isInstantLabelCtrlBusy = 0;
 
         // progress가 end면 자동 종료.
         bool autoCloseMode { get; set; } = false;
@@ -66,9 +67,9 @@ namespace CCd.Wins.UI
             InitializeComponent();
 
             // 메세지 처리하기전에 ctrl을 연결해줌.
-            this.fastColoredTextBoxLog.attachControl(this.fastColoredTextBox1);
+            this._fastColoredTextBoxLog.attachControl(this.fastColoredTextBox1);
 
-            startInstantMsgConsumeAsync();
+            Task.Run(() => listenToChannel_InstantMsgConsumeAsync() );
 #if DEBUG
             // end() 처리할때
             // this.label_InstantMsg.Text  에서자꾸 UI Thread 충돌 오류가 나서 해결이 안됨.
@@ -82,20 +83,23 @@ namespace CCd.Wins.UI
         }
 
 
-        public Task<bool> setUserTask(Func<ICCdProgress, CancellationToken, bool> userJob)
+        [Obsolete("Deprecated. use setUserJobFunc", true)]
+        public void setUserTask(Func<ICCdProgress, CancellationToken, bool> userJob)
         {
-            if (userJob != null)
-            {
-                this._userJobTask = createTask(userJob);
-            }
-            return this._userJobTask;
+            _userJobFunc = userJob;
         }
 
 
-        Task<bool> createTask(Func<ICCdProgress, CancellationToken, bool> userJob)
+        public void setUserJobFunc(Func<ICCdProgress, CancellationToken, bool> userJob)
+        {
+            _userJobFunc = userJob;
+        }
+
+
+        Task<bool> createTask(Func<ICCdProgress, CancellationToken, bool> userJob, Action<bool> completeFunc )
         {
             if (userJob == null)
-                return null;
+                return Task.FromResult(false);
 
             this.thradCancelSource = new CancellationTokenSource();
             CancellationToken token = this.thradCancelSource.Token;
@@ -103,14 +107,28 @@ namespace CCd.Wins.UI
             try
             {
                 // thread pool을 사용하지 않도록 함.
-                var newTask = new Task<bool>(() => userJob(this, token), token, TaskCreationOptions.LongRunning);
+                var newTask = new Task<bool>(() => {
+                    try
+                    {
+                        var result = userJob(this, token);
+                        completeFunc?.Invoke(result);
+                        end();
+                        return result;
+                    }
+                    catch (Exception ex)
+                    {
+                        completeFunc?.Invoke(false);
+                        end();
+                        return false;
+                    }
+                },token, TaskCreationOptions.LongRunning);
                 return newTask;
             }
             catch (OperationCanceledException ex)
             {
                 msg(ex.Message, LogMsgType.error);
             }
-            return null;
+            return Task.FromResult(false);
         }
 
 
@@ -123,7 +141,7 @@ namespace CCd.Wins.UI
         private void ProgressForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             stopJobThread();
-            this.fastColoredTextBoxLog.Dispose();
+            this._fastColoredTextBoxLog.Dispose();
         }
 
         void printReport()
@@ -185,11 +203,17 @@ namespace CCd.Wins.UI
         }
 
 
+        public int getSuccessCount()
+        {
+            return _indexStatus.successCount;
+        }
+
+
         private void button_Cancel_Click(object sender, EventArgs e)
         {
             if(isDoing())
             {
-                if (this._userJobTask.IsCompleted == false)
+                if (this._userJobTask?.IsCompleted == false)
                 {
                     if (MessageBox.Show("작업을 중지 하시겠습니까?", "", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
                         return;
@@ -197,14 +221,24 @@ namespace CCd.Wins.UI
                 }
 
                 msg("Canceled.", LogMsgType.warning);
+                innerFinishClear();
 
                 end();
             }
             else
             {
+                innerFinishClear();
                 Close();
             }
         }
+
+
+        void innerFinishClear()
+        {
+            instantMsgChannel.Writer.Complete();
+            stopJobThread();
+        }
+
 
 
         void updateProgressbar(IndexStatus indexStatus)
@@ -219,6 +253,8 @@ namespace CCd.Wins.UI
                 percent = 99;
 
             // 값에 변화가 있을때만 갱신하면됨.
+            // 이렇게 하면 어차피 최대 100번호출이기 때문에
+            // Lock걸고 할필요까진 없음.
             if (this.progressBar1.Value != percent)
             {
                 var func = new Action(() =>
@@ -280,8 +316,8 @@ namespace CCd.Wins.UI
 
         void updateIndexLabel(IndexStatus indexStatus)
         {
-            // UI가 바쁘면 쉬어가야함.
-            if (Interlocked.Read(ref isIndexLabelCtrlBusy) == 1)
+            // UI가 바쁘면 계산도 하지말고 쉬어가야함.
+            if(isIndexLabelCtrlBusy > 0 || Interlocked.Increment(ref isIndexLabelCtrlBusy) > 1 )
                 return;
 
             var msg = string.Format("{0} / {1}", indexStatus.currIndex, indexStatus.totalCount);
@@ -302,7 +338,8 @@ namespace CCd.Wins.UI
                     // 전체 예상시간.
                     var totalTime = _totalElapsedTimeWatch.ElapsedMilliseconds + remainTime;
                     var tTotal = TimeSpan.FromMilliseconds(totalTime);
-                    msg += String.Format("       {0} / {1}", tE.ToString(@"hh\:mm\:ss"), string.Format($"{tTotal.Hours}시{tTotal.Minutes}분"));
+                    int hours = tTotal.Hours + (tTotal.Days*24);
+                    msg += String.Format("       {0} / {1}", tE.ToString(@"hh\:mm\:ss"), string.Format($"{hours}시{tTotal.Minutes}분"));
                 }
             }
 
@@ -311,14 +348,16 @@ namespace CCd.Wins.UI
             {
                 indexStatus.text = msg;
                 tryUpdateIndexLabel(msg);
+                return;
             }
+
+            // 초기화.
+            Interlocked.Exchange( ref isIndexLabelCtrlBusy, 0 );
         }
 
 
         void tryUpdateIndexLabel(string msg)
         {
-            Interlocked.Exchange(ref isIndexLabelCtrlBusy, 1);
-
             var func = new Action(() =>
             {
                 try
@@ -349,13 +388,16 @@ namespace CCd.Wins.UI
         /// Instant Message가 있으면, 소비하는 task.
         /// </summary>
         /// <returns></returns>
-        async Task startInstantMsgConsumeAsync()
+        async Task listenToChannel_InstantMsgConsumeAsync()
         {
             while (await instantMsgChannel.Reader.WaitToReadAsync())
             {
+                string? lastMsg = null;
                 // 버퍼에 있는 마지막 놈만 출력하면 됨.
-                string lastMsg = null;
-                while (instantMsgChannel.Reader.TryRead(out var item))
+                // 근데, 너무 빨리 지속적으로 들어오면, 실제는 계속 무한루프가 걸리므로
+                // 일정 갯수를 넘어가면, 한번씩은 뿌려줘야함.
+                int refreshCount = 100;
+                while (instantMsgChannel.Reader.TryRead(out var item) && --refreshCount > 0 )
                 {
                     lastMsg = item;
                 }
@@ -383,25 +425,31 @@ namespace CCd.Wins.UI
                 return;
             }
 
-            // instant UI만 표출하는것이 아니고, log창에도 출력함.
+            // instant UI에 표출하는것이 아니고, log창에 출력함.
             if (this.writeInstantMsgToLog)
             {
-                this.fastColoredTextBoxLog.log(msg + Environment.NewLine);
+                this._fastColoredTextBoxLog.log(msg + Environment.NewLine);
                 return;
             }
 
-            // ui갱신명령이 수행됐다면.
-            if (Interlocked.Read(ref isInstantLabelCtrlBusy) == 1)
+            // ui갱신명령이 수행중이라면.
+            if(isInstantLabelCtrlBusy > 0 || Interlocked.Increment( ref isInstantLabelCtrlBusy) > 1 )
             {
                 // 아쉽지만, 해당 메세지는 소멸됨.
+                // 어차피 중요하지 않은 instant 메세지임.
                 return;
             }
-            Interlocked.Exchange(ref isInstantLabelCtrlBusy, 1);
 
             var func = new Action(() =>
             {
-                this.label_InstantMsg.Text = msg;
-                Interlocked.Exchange(ref isInstantLabelCtrlBusy, 0);
+                try
+                {
+                    this.label_InstantMsg.Text = msg;
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref isInstantLabelCtrlBusy, 0);
+                }
             });
 
             if (this.label_InstantMsg.InvokeRequired)
@@ -415,12 +463,16 @@ namespace CCd.Wins.UI
         }
 
 
-        public void runAsync()
+        public void runAsync( Action<bool>? complete = null )
         {
             this.backgroundWorker_DisplayLog?.RunWorkerAsync();
 
-            if (this._userJobTask != null)
+            if (this._userJobFunc != null)
             {
+                this._userJobTask = createTask(_userJobFunc, (success) => {
+                    complete?.Invoke(success);
+                });
+
                 try
                 {
                     this._userJobTask.Start();
@@ -435,23 +487,44 @@ namespace CCd.Wins.UI
         }
 
 
-        public void runAsync(Func<ICCdProgress, CancellationToken, bool> userJob )
+        public void runAsync(Func<ICCdProgress, CancellationToken, bool> userJob, Action<bool>? complete = null )
         {
-            setUserTask(userJob);
-            runAsync();
+            setUserJobFunc(userJob);
+            runAsync(complete);
         }
 
 
-        public bool begin(int totalCount, object tag)
+        public bool begin(int totalCount, object? tag = null )
+        {
+            return begin(totalCount, tag as string);
+        }
+
+
+        public bool begin(int totalCount, string? title = null )
         {
             this.started = true;
             _indexStatus.reset(totalCount);
 
             initProgressbar();
 
-            this.fastColoredTextBoxLog.headline("BEGIN" + Environment.NewLine);
+            if(title == null )
+                this._fastColoredTextBoxLog.headline( "BEGIN" + Environment.NewLine);
+            else
+                this._fastColoredTextBoxLog.headline($"BEGIN {title}" + Environment.NewLine);
+
+            Action safeUICall = delegate
+            {
+                this.button_Cancel.Text = "Cancel";
+                this.Invalidate();
+            };
+            if (this.InvokeRequired)
+                this.Invoke(safeUICall);
+            else
+                safeUICall();
+
             return true;
         }
+
 
         /// <summary>
         /// progress를 한단계 나아가게 함.
@@ -459,7 +532,7 @@ namespace CCd.Wins.UI
         /// <param name="msg"></param>
         /// <param name="totalCount"></param>
         /// <returns></returns>
-        public bool step(string sMsg = null, int totalCount = 0)
+        public bool step(string? sMsg = null, int totalCount = 0)
         {
             _timeCounter.beginStep();
 
@@ -472,7 +545,7 @@ namespace CCd.Wins.UI
 
             msg(sMsg, LogMsgType.step);
 
-            // 여기서 false를 return하면, 사용자가 알아서 중단해야 함.
+            // 여기서 false를 return하면, 사용자가 중단할지 판단함.
             return this.contiuneProgress;
         }
 
@@ -483,23 +556,23 @@ namespace CCd.Wins.UI
         /// </summary>
         /// <param name="result"></param>
         /// <param name="msg"></param>
-        public void stepResult(CCd.Log.ResultType result, string sMsg = null)
+        public void stepResult(CCd.Log.ResultType result, string? sMsg = null)
         {
             switch (result)
             {
-                case ResultType.warning:
+                case CCd.Log.ResultType.warning:
                     Interlocked.Increment(ref _indexStatus.warningCount);
                     Interlocked.Increment(ref _indexStatus.successCount);
                     break;
-                case ResultType.abort:
-                case ResultType.success:
+                case CCd.Log.ResultType.abort:
+                case CCd.Log.ResultType.success:
                     Interlocked.Increment(ref _indexStatus.successCount);
                     break;
-                case ResultType.failure:
+                case CCd.Log.ResultType.failure:
                     Interlocked.Increment(ref _indexStatus.failureCount);
                     updateFailureLabel(_indexStatus);
                     break;
-                case ResultType.skip:
+                case CCd.Log.ResultType.skip:
                     Interlocked.Increment(ref _indexStatus.skipCount);
                     Interlocked.Increment(ref _indexStatus.successCount);
                     break;
@@ -512,7 +585,8 @@ namespace CCd.Wins.UI
             msg(sMsg, convertTo(result));
 
             // 일단은 성공인놈들만 시간을 모으자.
-            if (result == ResultType.success)
+            // 실패인놈들의 시간은 짧아서, 예상시간이 확줄어듬.
+            if (result == CCd.Log.ResultType.success)
                 _timeCounter.endStep();
             else
                 _timeCounter.endStep(true);
@@ -525,14 +599,14 @@ namespace CCd.Wins.UI
         }
 
 
-        LogMsgType convertTo(ResultType result)
+        LogMsgType convertTo(CCd.Log.ResultType result)
         {
             switch (result)
             {
-                case ResultType.failure:
+                case CCd.Log.ResultType.failure:
                     return LogMsgType.error;
-                case ResultType.warning:
-                case ResultType.abort:
+                case CCd.Log.ResultType.warning:
+                case CCd.Log.ResultType.abort:
                     return LogMsgType.warning;
             }
             return LogMsgType.none;
@@ -555,30 +629,48 @@ namespace CCd.Wins.UI
             _indexStatus.currIndex = _indexStatus.totalCount;
             _timeCounter.endStep();
 
+            // UI 초기화.
+            {
+                // 간혈적으로 invoke에서 deadlock이 걸리는것 같아서.
+                // UI별로 분리해서 호출함.
+                Action restoreButtonCancel = delegate
+                {
+                    this.button_Cancel.Text = "Close";
+                };
+                if (this.button_Cancel.InvokeRequired)
+                    this.button_Cancel.Invoke(restoreButtonCancel);
+                else
+                    restoreButtonCancel();
+
+                Action initInstantLabel = delegate
+                {
+                    this.label_InstantMsg.Text = "";
+                };
+                if (this.label_InstantMsg.InvokeRequired)
+                    this.label_InstantMsg.Invoke(initInstantLabel);
+                else
+                    initInstantLabel();
+
+                this.Invalidate();
+            }
+
+
             if (this.started)
             {
                 this.started = false;
                 printReport();
             }
+            else
+            {
+                // 시작하지 않았으면, 꼭필요한 내용만
+                // 초기화 하고. 수행하지 말까?
+                if (this.started == false)
+                    return;
+            }
 
             updateFailureLabel(_indexStatus);
 
-            this.fastColoredTextBoxLog.headline("END" + Environment.NewLine);
-
-            Action safeUICall = delegate
-            {
-                this.button_Cancel.Text = "Close";
-                this.label_InstantMsg.Text = "";
-                this.Invalidate();
-            };
-            if (this.InvokeRequired)
-            {
-                this.Invoke(safeUICall);
-            }
-            else
-            {
-                safeUICall();
-            }
+            this._fastColoredTextBoxLog.headline("END" + Environment.NewLine);
 
             if (autoCloseMode)
             {
@@ -601,15 +693,25 @@ namespace CCd.Wins.UI
         void flushEntireLog()
         {
             // 로그가 비워질때까지 기다리면 됨.
-            // 로그출력은 내부 비동기로 작동함.
-            while( this.fastColoredTextBoxLog.getLogStackedCount() > 0 )
+            // 로그출력은 내부 비동기로 계속 비워짐.
+            while(this._userJobTask != null && this._fastColoredTextBoxLog.getLogStackedCount() > 0 )
             {
                 Thread.Sleep(1);
             }
         }
 
+        public void msg( List<LogItem> logItems)
+        {
+            if (logItems == null)
+                return;
+            foreach (var log in logItems)
+            {
+                msg(log.msg, log.type);
+            }
+        }
 
-        public void msg(string msg, LogMsgType type = LogMsgType.none)
+
+        public void msg(string? msg, LogMsgType type = LogMsgType.none)
         {
             if (type != LogMsgType.none)
             {
@@ -618,14 +720,14 @@ namespace CCd.Wins.UI
                     return;
             }
 
-            if (string.IsNullOrEmpty(msg))
+            if (msg == null || 0 == msg.Length)
                 return;
 
             switch (type)
             {
                 case LogMsgType.none:
                 case LogMsgType.debug:
-                    this.fastColoredTextBoxLog.log(msg + Environment.NewLine);
+                    this._fastColoredTextBoxLog.log(msg + Environment.NewLine);
                     break;
 
                 case LogMsgType.instant:
@@ -634,10 +736,10 @@ namespace CCd.Wins.UI
                     break;
 
                 case LogMsgType.warning:
-                    this.fastColoredTextBoxLog.warn(msg + Environment.NewLine);
+                    this._fastColoredTextBoxLog.warn(msg + Environment.NewLine);
                     break;
                 case LogMsgType.error:
-                    this.fastColoredTextBoxLog.err(msg + Environment.NewLine);
+                    this._fastColoredTextBoxLog.err(msg + Environment.NewLine);
                     break;
             }
         }

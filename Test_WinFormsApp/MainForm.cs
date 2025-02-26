@@ -229,7 +229,7 @@ namespace Tester
             int checkCount = 0;
             int tryTotalCount = 50000;
             ProgressForm form = new ProgressForm(false);
-            form.setUserTask((progress, cancelToken) =>
+            form.setUserJobFunc((progress, cancelToken) =>
             {
                 progress.begin(tryTotalCount, null);
                 for (int i = 0; i < tryTotalCount; i++)
