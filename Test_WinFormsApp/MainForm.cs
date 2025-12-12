@@ -234,6 +234,9 @@ namespace Tester
                 progress.begin(tryTotalCount, null);
                 for (int i = 0; i < tryTotalCount; i++)
                 {
+                    if (cancelToken.IsCancellationRequested || progress.canceled())
+                        return false;
+
                     ++checkCount;
                     progress.step(i.ToString());
                     progress.stepResult(CCd.Log.ResultType.success);

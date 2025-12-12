@@ -34,15 +34,18 @@ namespace CCd.Wins.UI
             }
         }
 
-
+        volatile bool _jobCompleted = false;   // userJob 끝남
+        volatile bool _flushing = false;       // 로그 아직 비우는 중
         Task<bool>? _userJobTask;
         Func<ICCdProgress, CancellationToken, bool>? _userJobFunc;
         CancellationTokenSource? _cancelSource = null;
         private Action<bool>? _complete;
         IndexStatus _indexStatus = new IndexStatus();
         Stopwatch _totalElapsedTimeWatch = new Stopwatch();
+        private readonly System.Windows.Forms.Timer _uiTimer = new();
         ElapsedTimeCounter _timeCounter = new ElapsedTimeCounter();
         FastColoredTextBoxNS.CCdFastColoredTextBoxLog _fastColoredTextBoxLog = new FastColoredTextBoxNS.CCdFastColoredTextBoxLog();
+        private readonly Channel<LogItem> _logChannel = Channel.CreateUnbounded<LogItem>();
         bool contiuneProgress = true;
         bool started = false;
         int isIndexLabelCtrlBusy = 0;
@@ -69,6 +72,47 @@ namespace CCd.Wins.UI
 
             // 메세지 처리하기전에 ctrl을 연결해줌.
             this._fastColoredTextBoxLog.attachControl(this.fastColoredTextBox1);
+
+            _uiTimer.Interval = 50;
+            _uiTimer.Tick += (_, __) =>
+            {
+                // UI 스레드에서만 실행됨 → Invoke/BeginInvoke 필요 없음
+                tryUpdateIndexLabel(_indexStatus.text); // 또는 여기서 직접 label_Index.Text = ...
+
+                int n = 7000; // 한 번에 최대 7000
+                while (n-- > 0 && _logChannel.Reader.TryRead(out var logItem))
+                {
+                    switch (logItem.type)
+                    {
+                        case LogMsgType.none:
+                        case LogMsgType.debug:
+                            this._fastColoredTextBoxLog.log(logItem.msg + Environment.NewLine);
+                            break;
+
+                        case LogMsgType.instant:
+                        case LogMsgType.step:
+                            pushInstantMsg(logItem.msg);
+                            break;
+
+                        case LogMsgType.warning:
+                            this._fastColoredTextBoxLog.warn(logItem.msg + Environment.NewLine);
+                            break;
+                        case LogMsgType.error:
+                            this._fastColoredTextBoxLog.err(logItem.msg + Environment.NewLine);
+                            break;
+                    }
+                }
+
+                // Writer가 닫혔고, 더 읽을게 없으면 플러시 종료
+                if (_flushing
+                    && _logChannel.Reader.Completion.IsCompleted
+                    && !_logChannel.Reader.TryPeek(out LogItem _))
+                {
+                    _flushing = false;
+                    updateCancelButton(); // 여기서 Close로 확정
+                }
+            };
+            _uiTimer.Start();
 
             Task.Run(() => listenToChannel_InstantMsgConsumeAsync());
 
@@ -576,12 +620,13 @@ namespace CCd.Wins.UI
             // 실제로 백그라운드 작업이 돌고 있을 때만 "작업중"
             if (_userJobTask != null && !_userJobTask.IsCompleted)
                 return true;
+            if (_flushing) return true;
             return false;
         }
 
         void EndUi()
         {
-            button_Cancel.Text = "Close";
+            button_Cancel.Text = isDoing() ? "Cancel" : "Close";
             label_InstantMsg.Text = "";
             Invalidate();
         }
@@ -651,15 +696,17 @@ namespace CCd.Wins.UI
         {
             if (logItems == null)
                 return;
+
             foreach (var log in logItems)
             {
-                msg(log.msg, log.type);
+                _logChannel.Writer.TryWrite(log);
             }
         }
 
 
         public void msg(string? msg, LogMsgType type = LogMsgType.none)
         {
+            if (string.IsNullOrEmpty(msg)) return;
             if (type != LogMsgType.none)
             {
                 // 허용한 type만 출력함.
@@ -667,28 +714,7 @@ namespace CCd.Wins.UI
                     return;
             }
 
-            if (msg == null || 0 == msg.Length)
-                return;
-
-            switch (type)
-            {
-                case LogMsgType.none:
-                case LogMsgType.debug:
-                    this._fastColoredTextBoxLog.log(msg + Environment.NewLine);
-                    break;
-
-                case LogMsgType.instant:
-                case LogMsgType.step:
-                    pushInstantMsg(msg);
-                    break;
-
-                case LogMsgType.warning:
-                    this._fastColoredTextBoxLog.warn(msg + Environment.NewLine);
-                    break;
-                case LogMsgType.error:
-                    this._fastColoredTextBoxLog.err(msg + Environment.NewLine);
-                    break;
-            }
+            _logChannel.Writer.TryWrite(new LogItem(msg) { type = type });
         }
 
 
@@ -746,6 +772,10 @@ namespace CCd.Wins.UI
             }
             finally
             {
+                _jobCompleted = true;
+                _logChannel.Writer.TryComplete();   // 더 이상 msg가 안 들어온다고 선언
+                _flushing = true;              // 이제 남은 로그 비우는 단계
+
                 // 작업 종료 상태를 확정
                 started = false;
                 contiuneProgress = false;
