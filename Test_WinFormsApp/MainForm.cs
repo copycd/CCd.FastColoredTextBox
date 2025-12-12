@@ -227,7 +227,7 @@ namespace Tester
         void myTestCode()
         {
             int checkCount = 0;
-            int tryTotalCount = 50000;
+            int tryTotalCount = 500000;
             ProgressForm form = new ProgressForm(false);
             form.setUserJobFunc((progress, cancelToken) =>
             {

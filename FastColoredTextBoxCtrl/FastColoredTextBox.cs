@@ -220,6 +220,7 @@ namespace FastColoredTextBoxNS
 
         private char[] autoCompleteBracketsList = { '(', ')', '{', '}', '[', ']', '"', '"', '\'', '\'' };
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public char[] AutoCompleteBracketsList
         {
             get { return autoCompleteBracketsList; }
@@ -239,6 +240,7 @@ namespace FastColoredTextBoxNS
         [Browsable(true)] 
         [Description("Colors of some service visual markers.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ServiceColors ServiceColors { get; set; }
 
         /// <summary>
@@ -318,6 +320,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         [Browsable(true)]
         [Description("ToolTip component.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ToolTip ToolTip { get; set; }
 
         /// <summary>
@@ -326,6 +329,7 @@ namespace FastColoredTextBoxNS
         [Browsable(true)]
         [DefaultValue(typeof (Color), "PowderBlue")]
         [Description("Color of bookmarks.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color BookmarkColor { get; set; }
 
         /// <summary>
@@ -477,6 +481,7 @@ namespace FastColoredTextBoxNS
         /// Height of char in pixels (includes LineInterval)
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int CharHeight
         {
             get { return charHeight; }
@@ -508,6 +513,7 @@ namespace FastColoredTextBoxNS
         /// Width of char in pixels
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int CharWidth { get; set; }
 
         /// <summary>
@@ -716,6 +722,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         [Browsable(true)]
         [Description("Paddings of text area.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Padding Paddings { get; set; }
 
         /// <summary>
@@ -820,7 +827,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         [Description("Here you can change hotkeys for FastColoredTextBox.")]
         [Editor(typeof(HotkeysEditor), typeof(UITypeEditor))]
-        [DefaultValue("Tab=IndentIncrease, Escape=ClearHints, PgUp=GoPageUp, PgDn=GoPageDown, End=GoEnd, Home=GoHome, Left=GoLeft, Up=GoUp, Right=GoRight, Down=GoDown, Ins=ReplaceMode, Del=DeleteCharRight, F3=FindNext, Shift+Tab=IndentDecrease, Shift+PgUp=GoPageUpWithSelection, Shift+PgDn=GoPageDownWithSelection, Shift+End=GoEndWithSelection, Shift+Home=GoHomeWithSelection, Shift+Left=GoLeftWithSelection, Shift+Up=GoUpWithSelection, Shift+Right=GoRightWithSelection, Shift+Down=GoDownWithSelection, Shift+Ins=Paste, Shift+Del=Cut, Ctrl+Back=ClearWordLeft, Ctrl+Space=AutocompleteMenu, Ctrl+End=GoLastLine, Ctrl+Home=GoFirstLine, Ctrl+Left=GoWordLeft, Ctrl+Up=ScrollUp, Ctrl+Right=GoWordRight, Ctrl+Down=ScrollDown, Ctrl+Ins=Copy, Ctrl+Del=ClearWordRight, Ctrl+0=ZoomNormal, Ctrl+A=SelectAll, Ctrl+B=BookmarkLine, Ctrl+C=Copy, Ctrl+E=MacroExecute, Ctrl+F=FindDialog, Ctrl+G=GoToDialog, Ctrl+H=ReplaceDialog, Ctrl+I=AutoIndentChars, Ctrl+M=MacroRecord, Ctrl+N=GoNextBookmark, Ctrl+R=Redo, Ctrl+U=UpperCase, Ctrl+V=Paste, Ctrl+X=Cut, Ctrl+Z=Undo, Ctrl+Add=ZoomIn, Ctrl+Subtract=ZoomOut, Ctrl+OemMinus=NavigateBackward, Ctrl+Shift+End=GoLastLineWithSelection, Ctrl+Shift+Home=GoFirstLineWithSelection, Ctrl+Shift+Left=GoWordLeftWithSelection, Ctrl+Shift+Right=GoWordRightWithSelection, Ctrl+Shift+B=UnbookmarkLine, Ctrl+Shift+C=CommentSelected, Ctrl+Shift+N=GoPrevBookmark, Ctrl+Shift+U=LowerCase, Ctrl+Shift+OemMinus=NavigateForward, Alt+Back=Undo, Alt+Up=MoveSelectedLinesUp, Alt+Down=MoveSelectedLinesDown, Alt+F=FindChar, Alt+Shift+Left=GoLeft_ColumnSelectionMode, Alt+Shift+Up=GoUp_ColumnSelectionMode, Alt+Shift+Right=GoRight_ColumnSelectionMode, Alt+Shift+Down=GoDown_ColumnSelectionMode")]
+        [DefaultValue("Tab=IndentIncrease, Escape=ClearHints, PgUp=GoPageUp, PgDn=GoPageDown, End=GoEnd, Home=GoHome, Left=GoLeft, Up=GoUp, Right=GoRight, Down=GoDown, Ins=ReplaceMode, Del=DeleteCharRight, F3=FindNext, Shift+Tab=IndentDecrease, Shift+PgUp=GoPageUpWithSelection, Shift+PgDn=GoPageDownWithSelection, Shift+End=GoEndWithSelection, Shift+Home=GoHomeWithSelection, Shift+Left=GoLeftWithSelection, Shift+Up=GoUpWithSelection, Shift+Right=GoRightWithSelection, Shift+Down=GoDownWithSelection, Shift+Ins=Paste, Shift+Del=Cut, Ctrl+Space=AutocompleteMenu, Ctrl+End=GoLastLine, Ctrl+Home=GoFirstLine, Ctrl+Left=GoWordLeft, Ctrl+Up=ScrollUp, Ctrl+Right=GoWordRight, Ctrl+Down=ScrollDown, Ctrl+Ins=Copy, Ctrl+Del=ClearWordRight, Ctrl+0=ZoomNormal, Ctrl+A=SelectAll, Ctrl+B=BookmarkLine, Ctrl+C=Copy, Ctrl+E=MacroExecute, Ctrl+F=FindDialog, Ctrl+G=GoToDialog, Ctrl+H=ReplaceDialog, Ctrl+I=AutoIndentChars, Ctrl+M=MacroRecord, Ctrl+N=GoNextBookmark, Ctrl+R=Redo, Ctrl+U=UpperCase, Ctrl+V=Paste, Ctrl+X=Cut, Ctrl+Z=Undo, Ctrl+Add=ZoomIn, Ctrl+Subtract=ZoomOut, Ctrl+OemMinus=NavigateBackward, Ctrl+Shift+End=GoLastLineWithSelection, Ctrl+Shift+Home=GoFirstLineWithSelection, Ctrl+Shift+Left=GoWordLeftWithSelection, Ctrl+Shift+Right=GoWordRightWithSelection, Ctrl+Shift+B=UnbookmarkLine, Ctrl+Shift+C=CommentSelected, Ctrl+Shift+N=GoPrevBookmark, Ctrl+Shift+U=LowerCase, Ctrl+Shift+OemMinus=NavigateForward, Alt+Up=MoveSelectedLinesUp, Alt+Down=MoveSelectedLinesDown, Alt+F=FindChar, Alt+Shift+Left=GoLeft_ColumnSelectionMode, Alt+Shift+Up=GoUp_ColumnSelectionMode, Alt+Shift+Right=GoRight_ColumnSelectionMode, Alt+Shift+Down=GoDown_ColumnSelectionMode")]
         public string Hotkeys { 
             get { return HotkeysMapping.ToString(); }
             set { HotkeysMapping = HotkeysMapping.Parse(value); }
@@ -849,24 +856,28 @@ namespace FastColoredTextBoxNS
         /// Style for rendering Selection area
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public SelectionStyle SelectionStyle { get; set; }
 
         /// <summary>
         /// Style for folded block rendering
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public TextStyle FoldedBlockStyle { get; set; }
 
         /// <summary>
         /// Style for brackets highlighting
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public MarkerStyle BracketsStyle { get; set; }
 
         /// <summary>
         /// Style for alternative brackets highlighting
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public MarkerStyle BracketsStyle2 { get; set; }
 
         /// <summary>
@@ -922,6 +933,7 @@ namespace FastColoredTextBoxNS
         /// Is keyboard in replace mode (wide caret) ?
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool IsReplaceMode
         {
             get
@@ -1174,6 +1186,7 @@ namespace FastColoredTextBoxNS
         /// Current selection range
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Range Selection
         {
             get { return selection; }
@@ -1207,6 +1220,7 @@ namespace FastColoredTextBoxNS
         /// If Null then BackColor is used.
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Brush BackBrush
         {
             get { return backBrush; }
@@ -1352,6 +1366,7 @@ namespace FastColoredTextBoxNS
         /// Gets or sets char and styleId for given place
         /// This property does not fire OnTextChanged event
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Char this[Place place]
         {
             get { return lines[place.iLine][place.iChar]; }
@@ -1549,6 +1564,7 @@ namespace FastColoredTextBoxNS
             Invalidate();
         }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new Size AutoScrollMinSize
         {
             set
@@ -5721,6 +5737,7 @@ namespace FastColoredTextBoxNS
         /// Zooming (in percentages)
         /// </summary>
         [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int Zoom 
         {
             get { return zoom; }

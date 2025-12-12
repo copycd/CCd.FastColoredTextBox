@@ -55,6 +55,7 @@ namespace Tester
         private volatile bool isUpdating;
         private Place StartReadPlace { get; set; }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         /// <summary>
         /// Control is waiting for line entering. 
         /// </summary>

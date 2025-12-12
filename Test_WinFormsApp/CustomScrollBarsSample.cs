@@ -1,8 +1,9 @@
-﻿using System;
+﻿using FastColoredTextBoxNS;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
-using FastColoredTextBoxNS;
 
 namespace Tester
 {
@@ -61,6 +62,7 @@ namespace Tester
     {
         private int @value;
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int Value
         {
             get { return value; }
@@ -74,6 +76,7 @@ namespace Tester
         }
 
         private int maximum = 100;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int Maximum
         {
             get { return maximum; }
@@ -81,6 +84,8 @@ namespace Tester
         }
 
         private int thumbSize = 10;
+
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int ThumbSize
         {
             get { return thumbSize; }
@@ -88,6 +93,8 @@ namespace Tester
         }
 
         private Color thumbColor = Color.Gray;
+
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color ThumbColor
         {
             get { return thumbColor; }
@@ -95,6 +102,8 @@ namespace Tester
         }
 
         private Color borderColor = Color.Silver;
+
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color BorderColor
         {
             get { return borderColor; }
@@ -102,6 +111,8 @@ namespace Tester
         }
 
         private ScrollOrientation orientation;
+
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ScrollOrientation Orientation
         {
             get { return orientation; }

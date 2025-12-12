@@ -36,8 +36,9 @@ namespace CCd.Wins.UI
 
 
         Task<bool>? _userJobTask;
-        Func<ICCdProgress, CancellationToken, bool> _userJobFunc;
-        CancellationTokenSource? thradCancelSource = null;
+        Func<ICCdProgress, CancellationToken, bool>? _userJobFunc;
+        CancellationTokenSource? _cancelSource = null;
+        private Action<bool>? _complete;
         IndexStatus _indexStatus = new IndexStatus();
         Stopwatch _totalElapsedTimeWatch = new Stopwatch();
         ElapsedTimeCounter _timeCounter = new ElapsedTimeCounter();
@@ -50,7 +51,7 @@ namespace CCd.Wins.UI
 
         // instant는 buffer의 크기를 많이 쌓을 필요가 없음.
         // 쌓이면, 이전에 쌓였던것 날려버리고, 새로운것을 무조건 기록해서 마지막것만 사용할것이므로.
-        Channel<string> instantMsgChannel = Channel.CreateBounded<string>( new BoundedChannelOptions(2) { FullMode = BoundedChannelFullMode.DropOldest } );
+        Channel<string> instantMsgChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(2) { FullMode = BoundedChannelFullMode.DropOldest });
         int isInstantLabelCtrlBusy = 0;
 
         // progress가 end면 자동 종료.
@@ -69,66 +70,16 @@ namespace CCd.Wins.UI
             // 메세지 처리하기전에 ctrl을 연결해줌.
             this._fastColoredTextBoxLog.attachControl(this.fastColoredTextBox1);
 
-            Task.Run(() => listenToChannel_InstantMsgConsumeAsync() );
-#if DEBUG
-            // end() 처리할때
-            // this.label_InstantMsg.Text  에서자꾸 UI Thread 충돌 오류가 나서 해결이 안됨.
-            // Invoke를 사용한 상황임. 그래서 어쩔수 없이 아래 설정을함.
-            // Release일때는 발현되지 않음.
-            CheckForIllegalCrossThreadCalls = false;
-#endif
+            Task.Run(() => listenToChannel_InstantMsgConsumeAsync());
 
             this.autoCloseMode = autoClose;
             this.backgroundWorker_DisplayLog.WorkerSupportsCancellation = true;
         }
 
 
-        [Obsolete("Deprecated. use setUserJobFunc", true)]
-        public void setUserTask(Func<ICCdProgress, CancellationToken, bool> userJob)
-        {
-            _userJobFunc = userJob;
-        }
-
-
         public void setUserJobFunc(Func<ICCdProgress, CancellationToken, bool> userJob)
         {
             _userJobFunc = userJob;
-        }
-
-
-        Task<bool> createTask(Func<ICCdProgress, CancellationToken, bool> userJob, Action<bool> completeFunc )
-        {
-            if (userJob == null)
-                return Task.FromResult(false);
-
-            this.thradCancelSource = new CancellationTokenSource();
-            CancellationToken token = this.thradCancelSource.Token;
-
-            try
-            {
-                // thread pool을 사용하지 않도록 함.
-                var newTask = new Task<bool>(() => {
-                    try
-                    {
-                        var result = userJob(this, token);
-                        completeFunc?.Invoke(result);
-                        end();
-                        return result;
-                    }
-                    catch (Exception ex)
-                    {
-                        completeFunc?.Invoke(false);
-                        end();
-                        return false;
-                    }
-                },token, TaskCreationOptions.LongRunning);
-                return newTask;
-            }
-            catch (OperationCanceledException ex)
-            {
-                msg(ex.Message, LogMsgType.error);
-            }
-            return Task.FromResult(false);
         }
 
 
@@ -140,6 +91,9 @@ namespace CCd.Wins.UI
 
         private void ProgressForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            instantMsgChannel.Writer.TryComplete();
+
+            _cancelSource?.Cancel();
             stopJobThread();
             this._fastColoredTextBoxLog.Dispose();
         }
@@ -175,31 +129,12 @@ namespace CCd.Wins.UI
             this.started = false;
             stopBackgroundWorker();
 
-            try
-            {
-                this.contiuneProgress = false;
-                if (this.thradCancelSource != null)
-                {
-                    this.thradCancelSource.Cancel();
-                    this.thradCancelSource.Dispose();
-                    this.thradCancelSource = null;
-                }
+            this.contiuneProgress = false;
 
-                if (this._userJobTask != null)
-                {
-                    this._userJobTask.Dispose();
-                    this._userJobTask = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                msg(ex.ToString(), LogMsgType.error);
-            }
-            finally
-            {
-                this.thradCancelSource = null;
-                this._userJobTask = null;
-            }
+            _cancelSource?.Cancel();
+
+            // Task.Dispose() 하지 마세요.
+            _userJobTask = null;
         }
 
 
@@ -211,7 +146,7 @@ namespace CCd.Wins.UI
 
         private void button_Cancel_Click(object sender, EventArgs e)
         {
-            if(isDoing())
+            if (isDoing())
             {
                 if (this._userJobTask?.IsCompleted == false)
                 {
@@ -235,7 +170,7 @@ namespace CCd.Wins.UI
 
         void innerFinishClear()
         {
-            instantMsgChannel.Writer.Complete();
+            instantMsgChannel.Writer.TryComplete();
             stopJobThread();
         }
 
@@ -302,7 +237,7 @@ namespace CCd.Wins.UI
             {
                 this.label_FailureCount.Text = String.Format("Failure : {0}", indexStatus.failureCount);
             });
-            
+
             if (this.label_FailureCount.InvokeRequired)
             {
                 this.label_FailureCount.BeginInvoke(func);
@@ -317,7 +252,7 @@ namespace CCd.Wins.UI
         void updateIndexLabel(IndexStatus indexStatus)
         {
             // UI가 바쁘면 계산도 하지말고 쉬어가야함.
-            if(isIndexLabelCtrlBusy > 0 || Interlocked.Increment(ref isIndexLabelCtrlBusy) > 1 )
+            if (isIndexLabelCtrlBusy > 0 || Interlocked.Increment(ref isIndexLabelCtrlBusy) > 1)
                 return;
 
             var msg = string.Format("{0} / {1}", indexStatus.currIndex, indexStatus.totalCount);
@@ -338,7 +273,7 @@ namespace CCd.Wins.UI
                     // 전체 예상시간.
                     var totalTime = _totalElapsedTimeWatch.ElapsedMilliseconds + remainTime;
                     var tTotal = TimeSpan.FromMilliseconds(totalTime);
-                    int hours = tTotal.Hours + (tTotal.Days*24);
+                    int hours = tTotal.Hours + (tTotal.Days * 24);
                     msg += String.Format("       {0} / {1}", tE.ToString(@"hh\:mm\:ss"), string.Format($"{hours}시{tTotal.Minutes}분"));
                 }
             }
@@ -352,7 +287,7 @@ namespace CCd.Wins.UI
             }
 
             // 초기화.
-            Interlocked.Exchange( ref isIndexLabelCtrlBusy, 0 );
+            Interlocked.Exchange(ref isIndexLabelCtrlBusy, 0);
         }
 
 
@@ -364,7 +299,7 @@ namespace CCd.Wins.UI
                 {
                     this.label_Index.Text = msg;
                 }
-                catch( Exception ex )
+                catch (Exception ex)
                 {
                     Debug.WriteLine("tryUpdateIndexLabel:" + ex.Message);
                 }
@@ -390,31 +325,34 @@ namespace CCd.Wins.UI
         /// <returns></returns>
         async Task listenToChannel_InstantMsgConsumeAsync()
         {
-            while (await instantMsgChannel.Reader.WaitToReadAsync())
+            try
             {
-                string? lastMsg = null;
-                // 버퍼에 있는 마지막 놈만 출력하면 됨.
-                // 근데, 너무 빨리 지속적으로 들어오면, 실제는 계속 무한루프가 걸리므로
-                // 일정 갯수를 넘어가면, 한번씩은 뿌려줘야함.
-                int refreshCount = 100;
-                while (instantMsgChannel.Reader.TryRead(out var item) && --refreshCount > 0 )
+                while (await instantMsgChannel.Reader.WaitToReadAsync())
                 {
-                    lastMsg = item;
-                }
+                    string? lastMsg = null;
+                    int refreshCount = 100;
 
-                if (lastMsg != null)
-                {
-                    tryUpdateInstantMsg(lastMsg);
+                    while (instantMsgChannel.Reader.TryRead(out var item) && --refreshCount > 0)
+                        lastMsg = item;
+
+                    if (lastMsg != null)
+                        tryUpdateInstantMsg(lastMsg);
                 }
+            }
+            catch (ChannelClosedException)
+            {
+                // 정상 종료
             }
         }
 
 
-        void pushInstantMsg( string msg )
+        void pushInstantMsg(string msg)
         {
-            if (msg == null)
+            if (string.IsNullOrEmpty(msg))
                 return;
-            instantMsgChannel.Writer.WriteAsync(msg);
+
+            // 닫혔거나, 꽉 차면 그냥 버림(의도대로)
+            instantMsgChannel.Writer.TryWrite(msg);
         }
 
 
@@ -433,7 +371,7 @@ namespace CCd.Wins.UI
             }
 
             // ui갱신명령이 수행중이라면.
-            if(isInstantLabelCtrlBusy > 0 || Interlocked.Increment( ref isInstantLabelCtrlBusy) > 1 )
+            if (isInstantLabelCtrlBusy > 0 || Interlocked.Increment(ref isInstantLabelCtrlBusy) > 1)
             {
                 // 아쉽지만, 해당 메세지는 소멸됨.
                 // 어차피 중요하지 않은 instant 메세지임.
@@ -463,52 +401,53 @@ namespace CCd.Wins.UI
         }
 
 
-        public void runAsync( Action<bool>? complete = null )
+        public void runAsync(Action<bool>? complete = null)
         {
-            this.backgroundWorker_DisplayLog?.RunWorkerAsync();
+            _ended = 0;
+            contiuneProgress = true;
+            started = false;
 
-            if (this._userJobFunc != null)
+            _complete = complete;
+
+            backgroundWorker_DisplayLog?.RunWorkerAsync();
+
+            if (_userJobFunc != null)
             {
-                this._userJobTask = createTask(_userJobFunc, (success) => {
-                    complete?.Invoke(success);
-                });
+                _cancelSource = new CancellationTokenSource();
 
-                try
-                {
-                    this._userJobTask.Start();
-                }
-                catch (OperationCanceledException ex)
-                {
-                    msg(ex.Message, LogMsgType.error);
-                }
+                this.Shown -= ProgressForm_Shown;
+                this.Shown += ProgressForm_Shown;
+
+                this.FormClosing -= ProgressForm_FormClosing;
+                this.FormClosing += ProgressForm_FormClosing;
             }
 
             this.ShowDialog();
         }
 
 
-        public void runAsync(Func<ICCdProgress, CancellationToken, bool> userJob, Action<bool>? complete = null )
+        public void runAsync(Func<ICCdProgress, CancellationToken, bool> userJob, Action<bool>? complete = null)
         {
             setUserJobFunc(userJob);
             runAsync(complete);
         }
 
 
-        public bool begin(int totalCount, object? tag = null )
+        public bool begin(int totalCount, object? tag = null)
         {
             return begin(totalCount, tag as string);
         }
 
 
-        public bool begin(int totalCount, string? title = null )
+        public bool begin(int totalCount, string? title = null)
         {
             this.started = true;
             _indexStatus.reset(totalCount);
 
             initProgressbar();
 
-            if(title == null )
-                this._fastColoredTextBoxLog.headline( "BEGIN" + Environment.NewLine);
+            if (title == null)
+                this._fastColoredTextBoxLog.headline("BEGIN" + Environment.NewLine);
             else
                 this._fastColoredTextBoxLog.headline($"BEGIN {title}" + Environment.NewLine);
 
@@ -624,8 +563,12 @@ namespace CCd.Wins.UI
         }
 
 
+        int _ended = 0;
         public void end()
         {
+            if (Interlocked.Exchange(ref _ended, 1) == 1)
+                return;
+
             _indexStatus.currIndex = _indexStatus.totalCount;
             _timeCounter.endStep();
 
@@ -694,13 +637,16 @@ namespace CCd.Wins.UI
         {
             // 로그가 비워질때까지 기다리면 됨.
             // 로그출력은 내부 비동기로 계속 비워짐.
-            while(this._userJobTask != null && this._fastColoredTextBoxLog.getLogStackedCount() > 0 )
+            var sw = Stopwatch.StartNew();
+            while (_fastColoredTextBoxLog.getLogStackedCount() > 0)
             {
+                if (sw.ElapsedMilliseconds > 2000) // 2초 정도
+                    break;
                 Thread.Sleep(1);
             }
         }
 
-        public void msg( List<LogItem> logItems)
+        public void msg(List<LogItem> logItems)
         {
             if (logItems == null)
                 return;
@@ -772,6 +718,46 @@ namespace CCd.Wins.UI
         private void check_writeInstantMsg_CheckedChanged(object sender, EventArgs e)
         {
             this.writeInstantMsgToLog = this.check_writeInstantMsg.Checked;
+        }
+
+
+        private async void ProgressForm_Shown(object sender, EventArgs e)
+        {
+            if (_userJobFunc is null || _cancelSource is null) return;
+
+            try
+            {
+                _userJobTask = Task.Run(() => _userJobFunc(this, _cancelSource.Token), _cancelSource.Token);
+
+                bool success = await _userJobTask;
+                _complete?.Invoke(success);
+            }
+            catch (OperationCanceledException)
+            {
+                _complete?.Invoke(false); // 취소를 실패로 볼지 정책 결정
+            }
+            catch (Exception ex)
+            {
+                msg(ex.ToString(), LogMsgType.error);
+                _complete?.Invoke(false);
+            }
+            finally
+            {
+                // end()가 UI 업데이트를 하니 UI 스레드에서 호출되는 현재 구조가 적절
+                end();
+
+                // 모달 닫기
+                if (!this.IsDisposed) this.Close();
+            }
+        }
+
+
+        void DisposeManagedResources()
+        {
+            _cancelSource?.Dispose();
+            _cancelSource = null;
+
+            _fastColoredTextBoxLog?.Dispose();
         }
     }
 }

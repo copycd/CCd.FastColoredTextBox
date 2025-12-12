@@ -16,6 +16,9 @@
             if (disposing && (components != null))
             {
                 components.Dispose();
+
+                // === 사용자 관리 리소스 ===
+                DisposeManagedResources();
             }
             base.Dispose(disposing);
         }
@@ -28,7 +31,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ProgressForm));
             fastColoredTextBox1 = new FastColoredTextBoxNS.FastColoredTextBox();
             backgroundWorker_DisplayLog = new System.ComponentModel.BackgroundWorker();
@@ -45,47 +47,24 @@
             // 
             fastColoredTextBox1.AllowDrop = false;
             fastColoredTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            fastColoredTextBox1.AutoCompleteBracketsList = new char[]
-    {
-    '(',
-    ')',
-    '{',
-    '}',
-    '[',
-    ']',
-    '"',
-    '"',
-    '\'',
-    '\''
-    };
             fastColoredTextBox1.AutoIndentCharsPatterns = "\r\n^\\s*[\\w\\.]+(\\s\\w+)?\\s*(?<range>=)\\s*(?<range>[^;=]+);\r\n^\\s*(case|default)\\s*[^:]*(?<range>:)\\s*(?<range>[^;]+);\r\n";
-            fastColoredTextBox1.AutoScrollMinSize = new Size(27, 14);
-            fastColoredTextBox1.BackBrush = null;
             fastColoredTextBox1.BracketsHighlightStrategy = FastColoredTextBoxNS.BracketsHighlightStrategy.Strategy2;
-            fastColoredTextBox1.CharHeight = 14;
-            fastColoredTextBox1.CharWidth = 8;
             fastColoredTextBox1.Cursor = Cursors.IBeam;
             fastColoredTextBox1.DefaultMarkerSize = 8;
             fastColoredTextBox1.DisabledColor = Color.FromArgb(100, 180, 180, 180);
-            fastColoredTextBox1.Font = new Font("Courier New", 9.75F);
             fastColoredTextBox1.Hotkeys = resources.GetString("fastColoredTextBox1.Hotkeys");
-            fastColoredTextBox1.IsReplaceMode = false;
             fastColoredTextBox1.Language = FastColoredTextBoxNS.Language.CSharp;
             fastColoredTextBox1.LeftBracket = '(';
             fastColoredTextBox1.LeftBracket2 = '{';
             fastColoredTextBox1.Location = new Point(12, 78);
             fastColoredTextBox1.Margin = new Padding(2, 4, 2, 4);
             fastColoredTextBox1.Name = "fastColoredTextBox1";
-            fastColoredTextBox1.Paddings = new Padding(0);
             fastColoredTextBox1.ReadOnly = true;
             fastColoredTextBox1.RightBracket = ')';
             fastColoredTextBox1.RightBracket2 = '}';
             fastColoredTextBox1.SelectionColor = Color.FromArgb(60, 0, 0, 255);
-            // copycd:: 아래함수 오류남, 추가하면 안됨.
-            //fastColoredTextBox1.ServiceColors = (FastColoredTextBoxNS.ServiceColors)resources.GetObject("fastColoredTextBox1.ServiceColors");
             fastColoredTextBox1.Size = new Size(625, 136);
             fastColoredTextBox1.TabIndex = 60;
-            fastColoredTextBox1.Zoom = 100;
             // 
             // backgroundWorker_DisplayLog
             // 
@@ -173,6 +152,7 @@
             Text = "ProgressForm";
             FormClosing += ProgressForm_FormClosing;
             Load += ProgressForm_Load;
+            Shown += ProgressForm_Shown;
             ((System.ComponentModel.ISupportInitialize)fastColoredTextBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
