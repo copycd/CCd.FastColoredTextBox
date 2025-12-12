@@ -462,12 +462,25 @@ namespace CCd.Wins.UI
                 this.button_Cancel.Text = "Cancel";
                 this.Invalidate();
             };
+
             if (this.InvokeRequired)
-                this.Invoke(safeUICall);
+                this.BeginInvoke(safeUICall);
             else
                 safeUICall();
 
             return true;
+        }
+
+
+        long _lastUiUpdateTick = 0;
+        void stepUiUpdate()
+        {
+            var now = Environment.TickCount64;
+            if (now - _lastUiUpdateTick < 50) return; // 50ms마다
+            _lastUiUpdateTick = now;
+
+            updateIndexLabel(_indexStatus);
+            updateProgressbar(_indexStatus);
         }
 
 
@@ -485,8 +498,7 @@ namespace CCd.Wins.UI
             if (totalCount > 0)
                 _indexStatus.totalCount = totalCount;
 
-            updateIndexLabel(_indexStatus);
-            updateProgressbar(_indexStatus);
+            stepUiUpdate();
 
             msg(sMsg, LogMsgType.step);
 
