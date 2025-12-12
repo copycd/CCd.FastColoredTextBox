@@ -143,28 +143,34 @@ namespace CCd.Wins.UI
             return _indexStatus.successCount;
         }
 
+        void updateCancelButton()
+        {
+            var text = isDoing() ? "Cancel" : "Close";
+
+            if (button_Cancel.InvokeRequired)
+                button_Cancel.BeginInvoke(new Action(() => button_Cancel.Text = text));
+            else
+                button_Cancel.Text = text;
+        }
+
 
         private void button_Cancel_Click(object sender, EventArgs e)
         {
             if (isDoing())
             {
-                if (this._userJobTask?.IsCompleted == false)
-                {
-                    if (MessageBox.Show("작업을 중지 하시겠습니까?", "", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
-                        return;
-                    stopJobThread();
-                }
+                if (MessageBox.Show("작업을 중지 하시겠습니까?", "", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                    return;
 
+                stopJobThread();
                 msg("Canceled.", LogMsgType.warning);
                 innerFinishClear();
-
                 end();
+
+                updateCancelButton();
+                return;
             }
-            else
-            {
-                innerFinishClear();
-                Close();
-            }
+            innerFinishClear();
+            Close();
         }
 
 
@@ -555,11 +561,17 @@ namespace CCd.Wins.UI
         // 작업중인지 판단.
         bool isDoing()
         {
-            if (this.started)
-                return true;
-            if (this._userJobTask != null && this._userJobTask.IsCompleted == false)
+            // 실제로 백그라운드 작업이 돌고 있을 때만 "작업중"
+            if (_userJobTask != null && !_userJobTask.IsCompleted)
                 return true;
             return false;
+        }
+
+        void EndUi()
+        {
+            button_Cancel.Text = "Close";
+            label_InstantMsg.Text = "";
+            Invalidate();
         }
 
 
@@ -572,31 +584,12 @@ namespace CCd.Wins.UI
             _indexStatus.currIndex = _indexStatus.totalCount;
             _timeCounter.endStep();
 
-            // UI 초기화.
-            {
-                // 간혈적으로 invoke에서 deadlock이 걸리는것 같아서.
-                // UI별로 분리해서 호출함.
-                Action restoreButtonCancel = delegate
-                {
-                    this.button_Cancel.Text = "Close";
-                };
-                if (this.button_Cancel.InvokeRequired)
-                    this.button_Cancel.Invoke(restoreButtonCancel);
-                else
-                    restoreButtonCancel();
+            if (IsDisposed) return;
 
-                Action initInstantLabel = delegate
-                {
-                    this.label_InstantMsg.Text = "";
-                };
-                if (this.label_InstantMsg.InvokeRequired)
-                    this.label_InstantMsg.Invoke(initInstantLabel);
-                else
-                    initInstantLabel();
-
-                this.Invalidate();
-            }
-
+            if (InvokeRequired)
+                BeginInvoke((Action)EndUi);
+            else
+                EndUi();
 
             if (this.started)
             {
@@ -619,16 +612,12 @@ namespace CCd.Wins.UI
             {
                 flushEntireLog();
 
-                if (this.InvokeRequired)
+                if (!IsDisposed && IsHandleCreated)
                 {
-                    this.Invoke(new Action(() =>
-                    {
+                    if (InvokeRequired)
+                        BeginInvoke(new Action(Close));
+                    else
                         Close();
-                    }));
-                }
-                else
-                {
-                    Close();
                 }
             }
         }
@@ -729,6 +718,8 @@ namespace CCd.Wins.UI
             {
                 _userJobTask = Task.Run(() => _userJobFunc(this, _cancelSource.Token), _cancelSource.Token);
 
+                updateCancelButton();
+
                 bool success = await _userJobTask;
                 _complete?.Invoke(success);
             }
@@ -743,11 +734,14 @@ namespace CCd.Wins.UI
             }
             finally
             {
-                // end()가 UI 업데이트를 하니 UI 스레드에서 호출되는 현재 구조가 적절
-                end();
+                // 작업 종료 상태를 확정
+                started = false;
+                contiuneProgress = false;
 
-                // 모달 닫기
-                if (!this.IsDisposed) this.Close();
+                // 버튼을 Close로 강제 변경(보장)
+                updateCancelButton();
+
+                end();
             }
         }
 
